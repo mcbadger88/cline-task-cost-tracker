@@ -1,0 +1,2 @@
+# Ignore most CSV log files
+cmd/cost-tracker-clinerule/logs/*.csv
