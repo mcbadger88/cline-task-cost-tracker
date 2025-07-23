@@ -18,6 +18,7 @@ This repository follows idiomatic Go project layout with separate packages and c
 │       ├── .cline_rules        # Cline automation rules
 │       └── logs/               # Generated CSV files
 ├── go.mod                      # Go module definition
+├── .gitignore                  # Git ignore rules
 └── README.md                   # This file
 ```
 
@@ -28,6 +29,7 @@ This repository follows idiomatic Go project layout with separate packages and c
 - **Task Identification**: Automatically extracts task IDs and timestamps
 - **Large File Handling**: Processes large log files with memory-efficient chunking
 - **Reusable Library**: Core logic available as importable Go package
+- **Simple API**: Single function call for complete processing
 
 ## CSV Output Columns
 
@@ -58,6 +60,18 @@ go run main.go "/path/to/ui_messages.json"
 
 ### As a Library
 
+**Simple one-call API (recommended):**
+```go
+import "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
+
+// Automatically generate output path and process everything
+err := uilogparser.ProcessUILogToCSVAuto(inputPath)
+
+// Or specify custom output path
+err := uilogparser.ProcessUILogToCSV(inputPath, outputPath)
+```
+
+**Advanced usage (if you need the intermediate data):**
 ```go
 import "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
 

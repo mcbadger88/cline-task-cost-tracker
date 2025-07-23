@@ -254,3 +254,64 @@ func formatTimeApprox(ts int64) string {
 	t := time.Unix(ts/1000, (ts%1000)*1000000)
 	return t.Format("15:04")
 }
+
+// ProcessUILogToCSV is a convenience function that handles the entire pipeline
+// from UI messages JSON file to CSV output in a single call
+func ProcessUILogToCSV(inputPath, outputPath string) error {
+	// Parse UI messages
+	messages, err := ParseUIMessages(inputPath)
+	if err != nil {
+		return err
+	}
+
+	// Process messages into cost records
+	records := ProcessMessages(messages)
+
+	// Ensure logs directory exists
+	if err := EnsureLogsDirectory(); err != nil {
+		return err
+	}
+
+	// Write CSV file
+	if err := WriteCSV(outputPath, records); err != nil {
+		return err
+	}
+
+	fmt.Printf("Cost tracker CSV generated: %s\n", outputPath)
+	fmt.Printf("Total records: %d\n", len(records))
+	return nil
+}
+
+// ProcessUILogToCSVAuto automatically generates the output path based on input
+func ProcessUILogToCSVAuto(inputPath string) error {
+	// Parse just enough to get the first message for timestamp
+	messages, err := ParseUIMessages(inputPath)
+	if err != nil {
+		return err
+	}
+
+	if len(messages) == 0 {
+		return fmt.Errorf("no messages found in the file")
+	}
+
+	// Generate output path
+	taskID := ExtractTaskID(inputPath)
+	outputPath := GenerateOutputPath(taskID, messages[0].Timestamp)
+
+	// Process the rest
+	records := ProcessMessages(messages)
+
+	// Ensure logs directory exists
+	if err := EnsureLogsDirectory(); err != nil {
+		return err
+	}
+
+	// Write CSV file
+	if err := WriteCSV(outputPath, records); err != nil {
+		return err
+	}
+
+	fmt.Printf("Cost tracker CSV generated: %s\n", outputPath)
+	fmt.Printf("Total records: %d\n", len(records))
+	return nil
+}
