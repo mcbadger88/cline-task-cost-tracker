@@ -83,17 +83,20 @@ func (fw *FileWatcher) watchLoop() {
 		select {
 		case event, ok := <-fw.watcher.Events:
 			if !ok {
+				log.Printf("DEBUG: File watcher events channel closed, exiting watchLoop")
 				return
 			}
 			fw.handleEvent(event)
 
 		case err, ok := <-fw.watcher.Errors:
 			if !ok {
+				log.Printf("DEBUG: File watcher errors channel closed, exiting watchLoop")
 				return
 			}
 			log.Printf("File watcher error: %v", err)
 
 		case <-fw.stopChan:
+			log.Printf("DEBUG: Received stop signal, exiting watchLoop")
 			return
 		}
 	}

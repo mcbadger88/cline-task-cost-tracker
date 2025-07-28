@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-const VERSION = "v2.0.0-fixed"
+const VERSION = "v2.1.0-eof-fix"
 
 func main() {
 	// Set up logging
@@ -34,6 +34,7 @@ func main() {
 	// Wait for either an error or a shutdown signal
 	select {
 	case err := <-errChan:
+		log.Printf("Received errChan %v, shutting down...", err)
 		if err != nil {
 			log.Fatalf("Server error: %v", err)
 		}

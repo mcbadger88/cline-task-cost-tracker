@@ -84,7 +84,10 @@ func (s *MCPServer) messageLoop() error {
 		line, err := s.reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				break
+				log.Printf("MCP client disconnected (EOF), but server continues running...")
+				// Don't exit - keep the server running for file watching
+				// The server should only stop on explicit signals
+				select {} // Block forever until signal
 			}
 			return fmt.Errorf("failed to read message: %v", err)
 		}

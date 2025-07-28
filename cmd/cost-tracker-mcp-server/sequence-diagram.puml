@@ -1,0 +1,70 @@
+@startuml Cost Tracker MCP Server Main Function Sequence
+
+title Cost Tracker MCP Server - Main Function Flow
+
+participant "main()" as Main
+participant "MCPServer" as Server
+participant "sigChan" as SigChan
+participant "errChan" as ErrChan
+participant "Goroutine" as Goroutine
+participant "FileWatcher" as FileWatcher
+participant "OS" as OS
+
+== Setup Phase ==
+Main -> Main: log.SetFlags(log.LstdFlags | log.Lshortfile)
+Main -> Main: log.Printf("Cost Tracker MCP Server %s starting...", VERSION)
+
+Main -> Server: NewMCPServer()
+Server --> Main: server instance or error
+
+alt Error creating server
+    Main -> Main: log.Fatalf("Failed to create MCP server: %v", err)
+    Main -> OS: exit(1)
+end
+
+== Channel Setup ==
+Main -> SigChan: make(chan os.Signal, 1)
+Main -> OS: signal.Notify(sigChan, SIGINT, SIGTERM)
+Main -> ErrChan: make(chan error, 1)
+
+== Start Server ==
+Main -> Goroutine: go func() {\n  errChan <- server.Start()\n}()
+
+activate Goroutine
+Goroutine -> Server: server.Start()
+Server -> FileWatcher: Start file watching
+Server -> Server: Start MCP protocol handling
+note right of Server: Server begins processing\nMCP requests and\nmonitoring files
+
+== Wait for Events (BLOCKING) ==
+Main -> Main: **BLOCKS HERE**\nselect {\n  case err := <-errChan\n  case sig := <-sigChan\n}
+note over Main: Main thread waits here\nuntil one of the channels\nreceives a value
+
+par Normal Operation
+    FileWatcher -> FileWatcher: Monitor ui_messages.json files
+    Server -> Server: Handle MCP requests
+    note over Server: Server runs normally...\nProcessing files and\nhandling MCP protocol
+and Error Scenario
+    alt Server error occurs
+        Server --> Goroutine: return error
+        Goroutine -> ErrChan: errChan <- error
+        deactivate Goroutine
+        ErrChan --> Main: error received
+        Main -> Main: log.Fatalf("Server error: %v", err)
+        Main -> OS: exit(1)
+    end
+and Signal Scenario
+    OS -> SigChan: SIGINT or SIGTERM
+    SigChan --> Main: signal received
+    Main -> Main: log.Printf("Received signal %v, shutting down...", sig)
+    Main -> Server: server.Stop()
+    Server -> FileWatcher: Stop file watching
+    Server -> Server: Stop MCP protocol handling
+    deactivate Goroutine
+end
+
+== Cleanup ==
+Main -> Main: log.Println("Cost Tracker MCP Server stopped")
+Main -> OS: exit(0)
+
+@enduml
