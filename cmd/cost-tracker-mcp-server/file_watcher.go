@@ -13,70 +13,66 @@ import (
 )
 
 // detectRepositoryRoot attempts to find the repository root where Cline is working
-func detectRepositoryRoot() (string, error) {
-	log.Printf("DEBUG: Starting repository detection...")
+func detectRepositoryRoot(taskFilePath string) (string, error) {
+	log.Printf("DEBUG: Starting repository detection for task file: %s", taskFilePath)
 
-	// Strategy 1: Check if we're already in a repository
-	cwd, err := os.Getwd()
-	log.Printf("DEBUG: Current working directory: %s", cwd)
-	if err == nil {
-		if repoRoot := findRepoRootFromPath(cwd); repoRoot != "" {
-			log.Printf("DEBUG: Found repository root from CWD: %s", repoRoot)
+	// Extract working directory from the ui_messages.json file
+	if workingDir := extractWorkingDirectoryFromTask(taskFilePath); workingDir != "" {
+		log.Printf("DEBUG: Extracted working directory from task: %s", workingDir)
+		if repoRoot := findRepoRootFromPath(workingDir); repoRoot != "" {
+			log.Printf("DEBUG: Found repository root from task working directory: %s", repoRoot)
 			return repoRoot, nil
 		}
-		log.Printf("DEBUG: No repository root found from CWD")
-	} else {
-		log.Printf("DEBUG: Error getting CWD: %v", err)
+		log.Printf("DEBUG: No repository root found from task working directory")
 	}
 
-	// Strategy 2: Look for recently modified repositories in common locations (including nested)
-	homeDir, err := os.UserHomeDir()
+	log.Printf("DEBUG: Could not detect repository from task context")
+	return "", fmt.Errorf("could not detect repository root from task context")
+}
+
+// extractWorkingDirectoryFromTask extracts the working directory from ui_messages.json
+func extractWorkingDirectoryFromTask(taskFilePath string) string {
+	log.Printf("DEBUG: Extracting working directory from: %s", taskFilePath)
+
+	file, err := os.Open(taskFilePath)
 	if err != nil {
-		log.Printf("DEBUG: Error getting home directory: %v", err)
-		return "", fmt.Errorf("failed to get home directory: %v", err)
+		log.Printf("DEBUG: Error opening task file: %v", err)
+		return ""
 	}
-	log.Printf("DEBUG: Home directory: %s", homeDir)
+	defer file.Close()
 
-	// Common project locations to search (including nested directories)
-	projectPaths := []string{
-		filepath.Join(homeDir, "Projects"),
-		filepath.Join(homeDir, "Documents"),
-		filepath.Join(homeDir, "Desktop"),
-	}
-
-	// Find the most recently modified repository
-	var mostRecentRepo string
-	var mostRecentTime time.Time
-
-	for _, basePath := range projectPaths {
-		log.Printf("DEBUG: Searching in: %s", basePath)
-		repos := findRecentReposInPathRecursive(basePath, 3)
-		log.Printf("DEBUG: Found %d repositories in %s", len(repos), basePath)
-
-		if len(repos) > 0 {
-			for _, repo := range repos {
-				log.Printf("DEBUG: Checking repository: %s", repo)
-				if info, err := os.Stat(repo); err == nil {
-					log.Printf("DEBUG: Repository %s modified at: %s", repo, info.ModTime())
-					if info.ModTime().After(mostRecentTime) {
-						mostRecentTime = info.ModTime()
-						mostRecentRepo = repo
-						log.Printf("DEBUG: New most recent repository: %s (modified: %s)", repo, info.ModTime())
-					}
-				} else {
-					log.Printf("DEBUG: Error getting info for repository %s: %v", repo, err)
-				}
-			}
-		}
+	// Read the file content
+	content := make([]byte, 10240) // Read first 10KB to find the working directory
+	n, err := file.Read(content)
+	if err != nil && n == 0 {
+		log.Printf("DEBUG: Error reading task file: %v", err)
+		return ""
 	}
 
-	if mostRecentRepo != "" {
-		log.Printf("DEBUG: Final selected repository: %s", mostRecentRepo)
-		return mostRecentRepo, nil
+	contentStr := string(content[:n])
+	log.Printf("DEBUG: Read %d bytes from task file", n)
+
+	// Look for the pattern "# Current Working Directory (/path/to/directory)"
+	workingDirPattern := "# Current Working Directory ("
+	startIdx := strings.Index(contentStr, workingDirPattern)
+	if startIdx == -1 {
+		log.Printf("DEBUG: Working directory pattern not found")
+		return ""
 	}
 
-	log.Printf("DEBUG: No repository found, returning error")
-	return "", fmt.Errorf("could not detect repository root")
+	// Find the start of the path
+	pathStart := startIdx + len(workingDirPattern)
+
+	// Find the end of the path (closing parenthesis)
+	pathEnd := strings.Index(contentStr[pathStart:], ")")
+	if pathEnd == -1 {
+		log.Printf("DEBUG: Could not find end of working directory path")
+		return ""
+	}
+
+	workingDir := contentStr[pathStart : pathStart+pathEnd]
+	log.Printf("DEBUG: Extracted working directory: %s", workingDir)
+	return workingDir
 }
 
 // findRepoRootFromPath walks up the directory tree to find a repository root
@@ -304,7 +300,7 @@ func (fw *FileWatcher) processFile(filePath string) {
 	log.Printf("Processing file change: %s", filePath)
 
 	// Try to detect the repository root where Cline is working
-	repoRoot, err := detectRepositoryRoot()
+	repoRoot, err := detectRepositoryRoot(filePath)
 	if err != nil {
 		log.Printf("Warning: Could not detect repository root (%v), falling back to MCP server directory", err)
 		// Fallback to current working directory (MCP server directory)

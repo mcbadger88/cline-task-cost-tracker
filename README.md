@@ -18,6 +18,17 @@ The Cost Tracker runs in the background and automatically:
 go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server@latest
 ```
 
+Check: Ensure you have Go's bin directory in your PATH. 
+
+If not:
+
+**macOS/Linux:**
+```bash
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.zshrc
+source ~/.zshrc
+```
+
+
 ### 2. Add to User MCP Configuration
 
 Add this to `~/Library/Application Support/Code/User/mcp.json`:
