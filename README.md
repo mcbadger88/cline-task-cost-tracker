@@ -1,121 +1,114 @@
-# Cline Task Cost Tracker
+# Cost Tracker for Cline
 
-A Go-based cost tracking system for Cline AI assistant tasks, providing detailed CSV reports of API usage and costs.
+Automatically track Cline task costs across all your repositories with zero configuration.
 
-## Project Structure
+## What It Does
 
-This repository follows idiomatic Go project layout with separate packages and commands:
+The Cost Tracker runs in the background and automatically:
+- 📊 **Monitors all Cline tasks** across every repository
+- 💰 **Generates detailed cost reports** in CSV format
+- 📁 **Organizes logs per repository** in `ui-log-parser/logs/`
+- 🔄 **Works continuously** without manual intervention
 
-```
-├── pkg/
-│   └── ui-log-parser/          # Shared library for parsing UI logs
-│       ├── types.go            # Data structures
-│       ├── parser.go           # Core parsing logic
-│       └── csv_writer.go       # CSV output functionality
-├── cmd/
-│   └── cost-tracker-clinerule/ # CLI tool with .cline_rules integration
-│       ├── main.go             # CLI application
-│       ├── .cline_rules        # Cline automation rules
-│       └── logs/               # Generated CSV files
-├── go.mod                      # Go module definition
-├── .gitignore                  # Git ignore rules
-└── README.md                   # This file
-```
+## Quick Setup (Recommended)
 
-## Features
-
-- **Automatic Cost Tracking**: Parses Cline UI message logs to extract API costs
-- **Detailed CSV Reports**: Generates comprehensive cost breakdowns with 15 columns
-- **Task Identification**: Automatically extracts task IDs and timestamps
-- **Large File Handling**: Processes large log files with memory-efficient chunking
-- **Reusable Library**: Core logic available as importable Go package
-- **Simple API**: Single function call for complete processing
-
-## CSV Output Columns
-
-1. **Request Summary** - Categorized request types (Task Request, User Input, API Request)
-2. **Ask/Say** - Message type and category
-3. **Cost** - Individual API request cost
-4. **Text** - Full message content
-5. **Timestamp** - Formatted timestamp
-6. **Context tokens used** - Token usage information
-7. **Total cost** - Cumulative cost
-8. **Cline_Action** - Extracted Cline actions
-9. **Tool_Used** - Tools invoked during the task
-10. **Has_Images** - Whether images were involved
-11. **Phase** - Task phase (Initial, Processing, Completion)
-12. **Context_Percentage** - Context window usage percentage
-13. **Search_Term_In_Transcript** - Unique search identifiers
-14. **Cost_Notes** - Additional cost-related notes
-15. **Time_Approx** - Approximate time (HH:MM format)
-
-## Usage
-
-### CLI Tool
+### 1. Install the MCP Server
 
 ```bash
-cd cmd/cost-tracker-clinerule
-go run main.go "/path/to/ui_messages.json"
+go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server@latest
 ```
 
-### As a Library
+### 2. Add to User MCP Configuration
 
-**Simple one-call API (recommended):**
-```go
-import "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
+Add this to `~/Library/Application Support/Code/User/mcp.json`:
 
-// Automatically generate output path and process everything
-err := uilogparser.ProcessUILogToCSVAuto(inputPath)
-
-// Or specify custom output path
-err := uilogparser.ProcessUILogToCSV(inputPath, outputPath)
-```
-
-**Advanced usage (if you need the intermediate data):**
-```go
-import "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
-
-// Parse UI messages
-messages, err := uilogparser.ParseUIMessages(filePath)
-if err != nil {
-    log.Fatal(err)
+```json
+{
+  "servers": {
+    "cost-tracker": {
+      "command": "cost-tracker-mcp-server",
+      "args": [],
+      "env": {},
+      "timeout": 300
+    }
+  }
 }
-
-// Process into cost records
-records := uilogparser.ProcessMessages(messages)
-
-// Generate CSV output
-err = uilogparser.WriteCSV(outputPath, records)
 ```
 
-## Cline Integration
+### 3. Restart VSCode
 
-The CLI tool includes `.cline_rules` for automatic cost tracking:
+After adding the configuration, restart VSCode completely.
 
-- Automatically executes after every API response
-- Works in both Plan Mode and Act Mode
-- Generates CSV files in the `logs/` directory
-- Uses task start time for consistent filename throughout task duration
+### 4. That's It!
 
-## Building
+The server now runs automatically in the background for all your repositories. Cost tracking CSV files will appear in `ui-log-parser/logs/` within each repository you work on.
+
+## What You Get
+
+### Automatic CSV Reports
+Every Cline task generates a detailed CSV file with:
+- Individual API request costs
+- Cumulative spending
+- Token usage statistics
+- Tool usage tracking
+- Task timing information
+
+### Example Output Location
+```
+your-project/
+├── ui-log-parser/
+│   └── logs/
+│       └── task_1753250474282_2025-07-23_16-01-14_costs.csv
+└── ... (your project files)
+```
+
+### MCP Tools Available
+Once configured, you'll have access to these tools in Cline:
+- `manual_cost_track` - Process specific files
+- `get_cost_summary` - View total costs across projects
+- `list_tracked_tasks` - See all tracked tasks
+- `get_current_task_costs` - Get current task details
+
+## Alternative: Cline Rule Installation
+
+If you prefer to use the Cline rule approach instead of the MCP server:
+
+### 1. Copy the Rule File
+
+Copy `cmd/cost-tracker-clinerule/.cline_rules` to your project root.
+
+### 2. Build the CLI Tool
 
 ```bash
-# Build CLI tool
 cd cmd/cost-tracker-clinerule
 go build -o cost-tracker
-
-# Run tests
-go test ./pkg/ui-log-parser/...
-
-# Tidy dependencies
-go mod tidy
 ```
 
-## Requirements
+### 3. Update the Rule Path
 
-- Go 1.19 or later
-- Access to Cline UI message logs (typically in `~/.../globalStorage/saoudrizwan.claude-dev/tasks/`)
+Edit `.cline_rules` to point to your built binary location.
 
-## License
+**Note**: The Cline rule approach requires manual setup per project, while the MCP server works globally across all repositories.
 
-This project is open source and available under standard Go project licensing terms.
+## Troubleshooting
+
+**Server not starting?**
+- Ensure Go is installed and available in your PATH
+- Check that `cost-tracker-mcp-server` is installed: `which cost-tracker-mcp-server`
+- Restart VSCode after configuration changes
+
+**No CSV files appearing?**
+- The server automatically detects your repository and creates logs there
+- Check for `ui-log-parser/logs/` directory in your project root
+- Look for debug messages in VSCode's output panel
+
+**Installation issues?**
+- Make sure your `GOPATH/bin` is in your system PATH
+- Try reinstalling: `go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server@latest`
+
+**Need more details?**
+See [cmd/cost-tracker-mcp-server/ADVANCED_USAGE.md](cmd/cost-tracker-mcp-server/ADVANCED_USAGE.md) for detailed configuration options, manual installation, troubleshooting, and development information.
+
+---
+
+**That's it!** Set it once, forget it, and get automatic cost tracking across all your Cline projects.
