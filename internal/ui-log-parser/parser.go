@@ -437,8 +437,58 @@ func ProcessUILogToCSVAuto(inputPath string) error {
 	return nil
 }
 
+// findMostRecentWorkingDirectory finds the most recent working directory mentioned in the messages
+func findMostRecentWorkingDirectory(inputPath string) string {
+	// Read the entire file to find the most recent working directory
+	data, err := ioutil.ReadFile(inputPath)
+	if err != nil {
+		log.Printf("DEBUG: Error reading file for most recent working directory: %v", err)
+		return ""
+	}
+
+	contentStr := string(data)
+	workingDirPattern := "# Current Working Directory ("
+
+	// Find all occurrences of working directory pattern
+	var lastWorkingDir string
+	startIdx := 0
+
+	for {
+		idx := strings.Index(contentStr[startIdx:], workingDirPattern)
+		if idx == -1 {
+			break
+		}
+
+		// Adjust index to absolute position
+		idx += startIdx
+
+		// Find the start of the path
+		pathStart := idx + len(workingDirPattern)
+
+		// Find the end of the path (closing parenthesis)
+		pathEnd := strings.Index(contentStr[pathStart:], ")")
+		if pathEnd == -1 {
+			break
+		}
+
+		// Extract this working directory
+		workingDir := contentStr[pathStart : pathStart+pathEnd]
+
+		// Only accept valid directory paths (must start with /Users/ and not contain quotes, newlines, or be placeholder text)
+		if strings.HasPrefix(workingDir, "/Users/") && !strings.Contains(workingDir, "\"") && !strings.Contains(workingDir, "\n") && workingDir != "/path/to/directory" {
+			lastWorkingDir = workingDir
+		}
+
+		// Move start index past this occurrence
+		startIdx = pathStart + pathEnd + 1
+	}
+
+	log.Printf("DEBUG: Found most recent working directory: %s", lastWorkingDir)
+	return lastWorkingDir
+}
+
 // ProcessUILogToCSVAutoAt automatically generates the output path based on input
-// and creates the logs directory at the specified base path
+// and creates the logs directory at the most recent working directory
 func ProcessUILogToCSVAutoAt(inputPath, basePath string) error {
 	log.Printf("DEBUG: ProcessUILogToCSVAutoAt called with inputPath=%s, basePath=%s", inputPath, basePath)
 
@@ -452,23 +502,31 @@ func ProcessUILogToCSVAutoAt(inputPath, basePath string) error {
 		return fmt.Errorf("no messages found in the file")
 	}
 
-	// Extract working directory from the input file
-	workingDir := extractWorkingDirectoryFromFile(inputPath)
-	log.Printf("DEBUG: Extracted working directory: %s", workingDir)
+	// Find the most recent working directory from the entire file
+	mostRecentWorkingDir := findMostRecentWorkingDirectory(inputPath)
+	if mostRecentWorkingDir == "" {
+		// Fallback to extracting from beginning of file
+		mostRecentWorkingDir = extractWorkingDirectoryFromFile(inputPath)
+	}
+	log.Printf("DEBUG: Using most recent working directory: %s", mostRecentWorkingDir)
 
-	// Generate output path relative to base path
+	// Use the most recent working directory as the base path for saving CSV
+	actualBasePath := filepath.Join(mostRecentWorkingDir, "ui-log-parser")
+
+	// Generate output path relative to the most recent working directory
 	taskID := ExtractTaskID(inputPath)
 	outputFilename := fmt.Sprintf("task_%s_%s_costs.csv", taskID, formatTimestampForFilename(messages[0].Timestamp))
-	outputPath := filepath.Join(basePath, "logs", outputFilename)
+	outputPath := filepath.Join(actualBasePath, "logs", outputFilename)
 
 	log.Printf("DEBUG: Generated outputPath: %s", outputPath)
 
-	// Process the rest with working directory
-	records := ProcessMessagesWithWorkingDir(messages, workingDir)
+	// Process the rest with working directory (using fallback for individual messages)
+	fallbackWorkingDir := extractWorkingDirectoryFromFile(inputPath)
+	records := ProcessMessagesWithWorkingDir(messages, fallbackWorkingDir)
 
-	// Ensure logs directory exists at the specified base path
-	log.Printf("DEBUG: About to call EnsureLogsDirectoryAt with basePath: %s", basePath)
-	if err := EnsureLogsDirectoryAt(basePath); err != nil {
+	// Ensure logs directory exists at the most recent working directory
+	log.Printf("DEBUG: About to call EnsureLogsDirectoryAt with basePath: %s", actualBasePath)
+	if err := EnsureLogsDirectoryAt(actualBasePath); err != nil {
 		log.Printf("DEBUG: EnsureLogsDirectoryAt failed: %v", err)
 		return err
 	}
