@@ -15,7 +15,18 @@ The Cost Tracker runs in the background and automatically:
 ### 1. Install the MCP Server
 
 ```bash
-go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server@latest
+# Clone and build from source (required due to internal packages)
+git clone https://github.com/mcbadger88/cline-task-cost-tracker.git
+cd cline-task-cost-tracker/cmd/cost-tracker-mcp-server
+go build -o cost-tracker-mcp-server
+```
+
+Then move the binary to your PATH:
+```bash
+# Move to a directory in your PATH, e.g.:
+mv cost-tracker-mcp-server ~/go/bin/
+# or
+sudo mv cost-tracker-mcp-server /usr/local/bin/
 ```
 
 ### 2. Add to User MCP Configuration
@@ -101,7 +112,7 @@ Edit `.cline_rules` to point to your built binary location.
 
 **Installation issues?**
 - Make sure your `GOPATH/bin` is in your system PATH
-- Try reinstalling: `go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server@latest`
+- Since the project uses internal packages, you must build from source as shown above
 
 **Need more details?**
 See [cmd/cost-tracker-mcp-server/ADVANCED_USAGE.md](cmd/cost-tracker-mcp-server/ADVANCED_USAGE.md) for detailed configuration options, manual installation, troubleshooting, and development information.

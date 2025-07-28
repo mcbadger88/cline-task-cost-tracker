@@ -1,0 +1,6 @@
+github.com/fsnotify/fsnotify v1.9.0 h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
+github.com/fsnotify/fsnotify v1.9.0/go.mod h1:8jBTzvmWwFyi3Pb8djgCCO5IBqzKJ/Jwo8TRcHyHii0=
+github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser v0.0.0-20250728022435-71f2f9f9740e h1:t5YUL6XRB/MjGZVOyfaWAHezYqmkwdyPOhmkXlNY+yE=
+github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser v0.0.0-20250728022435-71f2f9f9740e/go.mod h1:b4kchhh/2z4kU57MFAEyG15EviF/s/OccgvzC8Og4vM=
+golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
+golang.org/x/sys v0.13.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
