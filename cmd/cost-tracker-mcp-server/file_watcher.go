@@ -22,13 +22,13 @@ func detectRepositoryRoot() (string, error) {
 		}
 	}
 
-	// Strategy 2: Look for recently modified repositories in common locations
+	// Strategy 2: Look for recently modified repositories in common locations (including nested)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %v", err)
 	}
 
-	// Common project locations to search
+	// Common project locations to search (including nested directories)
 	projectPaths := []string{
 		filepath.Join(homeDir, "Projects"),
 		filepath.Join(homeDir, "Documents"),
@@ -40,7 +40,7 @@ func detectRepositoryRoot() (string, error) {
 	var mostRecentTime time.Time
 
 	for _, basePath := range projectPaths {
-		if repos := findRecentReposInPath(basePath); len(repos) > 0 {
+		if repos := findRecentReposInPathRecursive(basePath, 3); len(repos) > 0 {
 			for _, repo := range repos {
 				if info, err := os.Stat(repo); err == nil {
 					if info.ModTime().After(mostRecentTime) {
@@ -109,6 +109,37 @@ func findRecentReposInPath(basePath string) []string {
 			if repoRoot := findRepoRoot(dirPath); repoRoot != "" {
 				repos = append(repos, repoRoot)
 			}
+		}
+	}
+
+	return repos
+}
+
+// findRecentReposInPathRecursive finds repositories recursively up to maxDepth levels
+func findRecentReposInPathRecursive(basePath string, maxDepth int) []string {
+	var repos []string
+
+	if maxDepth <= 0 {
+		return repos
+	}
+
+	entries, err := os.ReadDir(basePath)
+	if err != nil {
+		return repos
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dirPath := filepath.Join(basePath, entry.Name())
+
+			// Check if this directory is a repository
+			if repoRoot := findRepoRoot(dirPath); repoRoot != "" {
+				repos = append(repos, repoRoot)
+			}
+
+			// Recursively search subdirectories
+			subRepos := findRecentReposInPathRecursive(dirPath, maxDepth-1)
+			repos = append(repos, subRepos...)
 		}
 	}
 
