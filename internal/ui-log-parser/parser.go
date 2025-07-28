@@ -298,16 +298,44 @@ func extractWorkingDirectoryFromFile(filePath string) string {
 	return workingDir
 }
 
+// extractWorkingDirectoryFromMessage extracts working directory from individual message text
+func extractWorkingDirectoryFromMessage(text string) string {
+	// Look for the pattern "# Current Working Directory (/path/to/directory)"
+	workingDirPattern := "# Current Working Directory ("
+	startIdx := strings.Index(text, workingDirPattern)
+	if startIdx == -1 {
+		return ""
+	}
+
+	// Find the start of the path
+	pathStart := startIdx + len(workingDirPattern)
+
+	// Find the end of the path (closing parenthesis)
+	pathEnd := strings.Index(text[pathStart:], ")")
+	if pathEnd == -1 {
+		return ""
+	}
+
+	workingDir := text[pathStart : pathStart+pathEnd]
+	return workingDir
+}
+
 // ProcessMessagesWithWorkingDir converts UI messages to cost records with working directory
-func ProcessMessagesWithWorkingDir(messages []UIMessage, workingDir string) []CostRecord {
+func ProcessMessagesWithWorkingDir(messages []UIMessage, fallbackWorkingDir string) []CostRecord {
 	var records []CostRecord
 	var totalCost float64
 
 	for i, msg := range messages {
+		// Extract working directory from this specific message, or use fallback
+		messageWorkingDir := extractWorkingDirectoryFromMessage(msg.Text)
+		if messageWorkingDir == "" {
+			messageWorkingDir = fallbackWorkingDir
+		}
+
 		record := CostRecord{
 			Timestamp:        formatTimestamp(msg.Timestamp),
 			Text:             msg.Text,
-			WorkingDirectory: workingDir,
+			WorkingDirectory: messageWorkingDir,
 		}
 
 		// Determine Ask/Say column and Request Summary

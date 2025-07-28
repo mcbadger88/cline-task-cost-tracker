@@ -37,8 +37,21 @@ func HandleGenerateCSV(params map[string]interface{}) (*MCPResponse, error) {
 		return nil, fmt.Errorf("file does not exist: %s", filePath)
 	}
 
-	// Process the file
-	err := uilogparser.ProcessUILogToCSVAuto(filePath)
+	// Try to detect the repository root where Cline is working
+	repoRoot, err := detectRepositoryRoot(filePath)
+	if err != nil {
+		// Fallback to current working directory (MCP server directory)
+		repoRoot, err = os.Getwd()
+		if err != nil {
+			return nil, fmt.Errorf("error getting current working directory: %v", err)
+		}
+	}
+
+	// Create the target log directory: {repoRoot}/ui-log-parser
+	logBasePath := filepath.Join(repoRoot, "ui-log-parser")
+
+	// Use the new function that creates logs directory in the detected repository
+	err = uilogparser.ProcessUILogToCSVAutoAt(filePath, logBasePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to process file: %v", err)
 	}
@@ -50,7 +63,7 @@ func HandleGenerateCSV(params map[string]interface{}) (*MCPResponse, error) {
 		Content: []MCPContent{
 			{
 				Type: "text",
-				Text: fmt.Sprintf("Successfully processed task %s and generated CSV file", taskID),
+				Text: fmt.Sprintf("Successfully processed task %s and generated CSV file at %s/logs/", taskID, logBasePath),
 			},
 		},
 	}, nil
