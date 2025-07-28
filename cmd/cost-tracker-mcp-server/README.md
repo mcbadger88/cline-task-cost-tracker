@@ -62,12 +62,9 @@ your-project/
 └── ... (your project files)
 ```
 
-### MCP Tools Available
-Once configured, you'll have access to these tools in Cline:
-- `manual_cost_track` - Process specific files
-- `get_cost_summary` - View total costs across projects
-- `list_tracked_tasks` - See all tracked tasks
-- `get_current_task_costs` - Get current task details
+### MCP Tool Available
+Once configured, you'll have access to this tool in Cline:
+- `generate_csv` - Generate CSV file with cost tracking data from ui_messages.json file
 
 ## Troubleshooting
 

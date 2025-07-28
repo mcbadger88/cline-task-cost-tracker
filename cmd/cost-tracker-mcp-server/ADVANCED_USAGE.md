@@ -67,10 +67,10 @@ If you have the binary in a custom location:
 }
 ```
 
-## MCP Tools Reference
+## MCP Tool Reference
 
-### 1. `manual_cost_track`
-Manually trigger cost tracking for a specific ui_messages.json file.
+### `generate_csv`
+Generate CSV file with cost tracking data from ui_messages.json file.
 
 **Parameters:**
 - `file_path` (optional): Path to ui_messages.json file. Defaults to current task if not provided.
@@ -78,33 +78,14 @@ Manually trigger cost tracking for a specific ui_messages.json file.
 **Example:**
 ```json
 {
-  "name": "manual_cost_track",
+  "name": "generate_csv",
   "arguments": {
     "file_path": "/Users/emma/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/1753250474282/ui_messages.json"
   }
 }
 ```
 
-### 2. `get_cost_summary`
-Get a summary of costs across all tracked tasks.
-
-**Parameters:** None
-
-**Returns:** Summary with total costs, task counts, and individual task details.
-
-### 3. `list_tracked_tasks`
-List all tasks that have been tracked for costs.
-
-**Parameters:** None
-
-**Returns:** List of task IDs that have generated CSV files.
-
-### 4. `get_current_task_costs`
-Get cost information for the current/most recent task.
-
-**Parameters:** None
-
-**Returns:** Detailed cost information for the most recent task.
+**Returns:** Confirmation message with task ID and CSV generation status.
 
 ## CSV Output Format
 
@@ -258,7 +239,7 @@ cmd/cost-tracker-mcp-server/
 
 - **main.go**: Application lifecycle, signal handling, graceful shutdown
 - **server.go**: MCP protocol handling, message parsing, tool routing
-- **handlers.go**: Implementation of the 4 MCP tools
+- **handlers.go**: Implementation of the MCP tool
 - **file_watcher.go**: File system monitoring, repository detection, CSV generation
 - **config.go**: Constants and configuration values
 
@@ -313,7 +294,7 @@ go build -o cost-tracker-mcp-server
 - **Automatic File Monitoring**: Watches Cline task directories for `ui_messages.json` changes
 - **Debounced Processing**: 1-second delay to avoid processing rapid file changes
 - **CSV Generation**: Uses the proven `ui-log-parser` library to generate 15-column CSV files
-- **MCP Tools**: Provides 4 tools for cost tracking and analysis
+- **MCP Tool**: Provides a single tool for CSV generation
 - **Graceful Error Handling**: Robust error handling for file access issues
 - **Repository Auto-Detection**: Automatically finds and organizes logs per repository
 - **Continuous Operation**: Survives MCP connection timeouts and keeps running

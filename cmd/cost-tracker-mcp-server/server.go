@@ -134,8 +134,8 @@ func (s *MCPServer) handleToolsList(id interface{}) error {
 		"result": map[string]interface{}{
 			"tools": []map[string]interface{}{
 				{
-					"name":        "manual_cost_track",
-					"description": "Manually trigger cost tracking for a specific ui_messages.json file",
+					"name":        "generate_csv",
+					"description": "Generate CSV file with cost tracking data from ui_messages.json file",
 					"inputSchema": map[string]interface{}{
 						"type": "object",
 						"properties": map[string]interface{}{
@@ -144,30 +144,6 @@ func (s *MCPServer) handleToolsList(id interface{}) error {
 								"description": "Path to ui_messages.json file (optional, defaults to current task)",
 							},
 						},
-					},
-				},
-				{
-					"name":        "get_cost_summary",
-					"description": "Get a summary of costs across all tracked tasks",
-					"inputSchema": map[string]interface{}{
-						"type":       "object",
-						"properties": map[string]interface{}{},
-					},
-				},
-				{
-					"name":        "list_tracked_tasks",
-					"description": "List all tasks that have been tracked for costs",
-					"inputSchema": map[string]interface{}{
-						"type":       "object",
-						"properties": map[string]interface{}{},
-					},
-				},
-				{
-					"name":        "get_current_task_costs",
-					"description": "Get cost information for the current/most recent task",
-					"inputSchema": map[string]interface{}{
-						"type":       "object",
-						"properties": map[string]interface{}{},
 					},
 				},
 			},
@@ -200,14 +176,8 @@ func (s *MCPServer) handleToolsCall(request map[string]interface{}) error {
 	var err error
 
 	switch name {
-	case "manual_cost_track":
-		response, err = HandleManualCostTrack(arguments)
-	case "get_cost_summary":
-		response, err = HandleGetCostSummary(arguments)
-	case "list_tracked_tasks":
-		response, err = HandleListTrackedTasks(arguments)
-	case "get_current_task_costs":
-		response, err = HandleGetCurrentTaskCosts(arguments)
+	case "generate_csv":
+		response, err = HandleGenerateCSV(arguments)
 	default:
 		return s.sendError(id, fmt.Sprintf("unknown tool: %s", name))
 	}
