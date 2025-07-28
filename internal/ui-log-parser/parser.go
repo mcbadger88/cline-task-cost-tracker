@@ -256,6 +256,98 @@ func formatTimeApprox(ts int64) string {
 	return t.Format("15:04")
 }
 
+// extractWorkingDirectoryFromFile extracts the working directory from ui_messages.json
+func extractWorkingDirectoryFromFile(filePath string) string {
+	file, err := os.Open(filePath)
+	if err != nil {
+		log.Printf("DEBUG: Error opening file for working directory extraction: %v", err)
+		return ""
+	}
+	defer file.Close()
+
+	// Read the file content
+	content := make([]byte, 10240) // Read first 10KB to find the working directory
+	n, err := file.Read(content)
+	if err != nil && n == 0 {
+		log.Printf("DEBUG: Error reading file for working directory extraction: %v", err)
+		return ""
+	}
+
+	contentStr := string(content[:n])
+
+	// Look for the pattern "# Current Working Directory (/path/to/directory)"
+	workingDirPattern := "# Current Working Directory ("
+	startIdx := strings.Index(contentStr, workingDirPattern)
+	if startIdx == -1 {
+		log.Printf("DEBUG: Working directory pattern not found in file")
+		return ""
+	}
+
+	// Find the start of the path
+	pathStart := startIdx + len(workingDirPattern)
+
+	// Find the end of the path (closing parenthesis)
+	pathEnd := strings.Index(contentStr[pathStart:], ")")
+	if pathEnd == -1 {
+		log.Printf("DEBUG: Could not find end of working directory path in file")
+		return ""
+	}
+
+	workingDir := contentStr[pathStart : pathStart+pathEnd]
+	log.Printf("DEBUG: Extracted working directory from file: %s", workingDir)
+	return workingDir
+}
+
+// ProcessMessagesWithWorkingDir converts UI messages to cost records with working directory
+func ProcessMessagesWithWorkingDir(messages []UIMessage, workingDir string) []CostRecord {
+	var records []CostRecord
+	var totalCost float64
+
+	for i, msg := range messages {
+		record := CostRecord{
+			Timestamp:        formatTimestamp(msg.Timestamp),
+			Text:             msg.Text,
+			WorkingDirectory: workingDir,
+		}
+
+		// Determine Ask/Say column and Request Summary
+		if msg.Type == "say" {
+			record.AskSay = fmt.Sprintf(`"say": "%s"`, msg.Say)
+			record.RequestSummary = categorizeMessage(msg.Say, msg.Text, i)
+		} else if msg.Type == "ask" {
+			record.AskSay = fmt.Sprintf(`"ask": "%s"`, msg.Ask)
+			record.RequestSummary = "" // Ask messages don't populate Request Summary
+		}
+
+		// Extract cost information
+		cost := extractCost(msg.Text)
+		if cost > 0 {
+			record.Cost = fmt.Sprintf("%.6f", cost)
+			totalCost += cost
+		}
+
+		// Extract context tokens
+		record.ContextTokens = extractContextTokens(msg.Text)
+
+		// Set total cost (cumulative)
+		record.TotalCost = fmt.Sprintf("%.6f", totalCost)
+
+		// Generate additional fields
+		record.ClineAction = extractClineAction(msg)
+		record.ToolUsed = extractToolUsed(msg)
+		record.HasImages = extractHasImages(msg)
+		record.Phase = determinePhase(msg, i)
+		record.ContextPercentage = extractContextPercentage(msg)
+		record.SearchTermInTranscript = generateSearchTerm(msg, i)
+		record.CostNotes = generateCostNotes(msg)
+		record.TimeApprox = formatTimeApprox(msg.Timestamp)
+
+		records = append(records, record)
+	}
+
+	return records
+}
+
 // ProcessUILogToCSV is a convenience function that handles the entire pipeline
 // from UI messages JSON file to CSV output in a single call
 func ProcessUILogToCSV(inputPath, outputPath string) error {
@@ -332,6 +424,10 @@ func ProcessUILogToCSVAutoAt(inputPath, basePath string) error {
 		return fmt.Errorf("no messages found in the file")
 	}
 
+	// Extract working directory from the input file
+	workingDir := extractWorkingDirectoryFromFile(inputPath)
+	log.Printf("DEBUG: Extracted working directory: %s", workingDir)
+
 	// Generate output path relative to base path
 	taskID := ExtractTaskID(inputPath)
 	outputFilename := fmt.Sprintf("task_%s_%s_costs.csv", taskID, formatTimestampForFilename(messages[0].Timestamp))
@@ -339,8 +435,8 @@ func ProcessUILogToCSVAutoAt(inputPath, basePath string) error {
 
 	log.Printf("DEBUG: Generated outputPath: %s", outputPath)
 
-	// Process the rest
-	records := ProcessMessages(messages)
+	// Process the rest with working directory
+	records := ProcessMessagesWithWorkingDir(messages, workingDir)
 
 	// Ensure logs directory exists at the specified base path
 	log.Printf("DEBUG: About to call EnsureLogsDirectoryAt with basePath: %s", basePath)

@@ -23,6 +23,7 @@ func WriteCSV(filename string, records []CostRecord) error {
 		"Context tokens used", "Total cost", "Cline_Action",
 		"Tool_Used", "Has_Images", "Phase", "Context_Percentage",
 		"Search_Term_In_Transcript", "Cost_Notes", "Time_Approx",
+		"Working_Directory",
 	}
 	if err := writer.Write(header); err != nil {
 		return err
@@ -46,6 +47,7 @@ func WriteCSV(filename string, records []CostRecord) error {
 			record.SearchTermInTranscript,
 			record.CostNotes,
 			record.TimeApprox,
+			record.WorkingDirectory,
 		}
 		if err := writer.Write(row); err != nil {
 			return err

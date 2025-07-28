@@ -19,15 +19,12 @@ func detectRepositoryRoot(taskFilePath string) (string, error) {
 	// Extract working directory from the ui_messages.json file
 	if workingDir := extractWorkingDirectoryFromTask(taskFilePath); workingDir != "" {
 		log.Printf("DEBUG: Extracted working directory from task: %s", workingDir)
-		if repoRoot := findRepoRootFromPath(workingDir); repoRoot != "" {
-			log.Printf("DEBUG: Found repository root from task working directory: %s", repoRoot)
-			return repoRoot, nil
-		}
-		log.Printf("DEBUG: No repository root found from task working directory")
+		log.Printf("DEBUG: Using extracted working directory directly as repository root: %s", workingDir)
+		return workingDir, nil
 	}
 
-	log.Printf("DEBUG: Could not detect repository from task context")
-	return "", fmt.Errorf("could not detect repository root from task context")
+	log.Printf("DEBUG: Could not extract working directory from task context")
+	return "", fmt.Errorf("could not extract working directory from task context")
 }
 
 // extractWorkingDirectoryFromTask extracts the working directory from ui_messages.json

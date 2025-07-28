@@ -26,4 +26,5 @@ type CostRecord struct {
 	SearchTermInTranscript string
 	CostNotes              string
 	TimeApprox             string
+	WorkingDirectory       string
 }
