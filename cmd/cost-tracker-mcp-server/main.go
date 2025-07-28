@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-const VERSION = "v2.1.0-eof-fix"
+const VERSION = "v2.2.0-auto-detect-repo"
 
 func main() {
 	// Set up logging

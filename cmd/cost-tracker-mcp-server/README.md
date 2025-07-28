@@ -74,21 +74,34 @@ Get cost information for the current/most recent task.
 
 ## Cline MCP Configuration
 
-Add this configuration to your Cline MCP settings:
+### User-Level Configuration (Recommended)
+
+Add this configuration to your user-level MCP settings file at:
+`~/Library/Application Support/Code/User/mcp.json`
 
 ```json
 {
-  "mcpServers": {
+  "servers": {
     "cost-tracker": {
-      "command": "/path/to/cost-tracker-mcp-server",
-      "args": [],
-      "env": {}
+      "command": "go",
+      "args": ["run", "."],
+      "env": {},
+      "cwd": "/Users/emma/Projects/Mantel/cost-and-transcripts-trackers/cmd/cost-tracker-mcp-server",
+      "timeout": 300
     }
   }
 }
 ```
 
-Replace `/path/to/cost-tracker-mcp-server` with the actual path to your built executable.
+**Important Notes:**
+- Replace the `cwd` path with your actual project path
+- The `timeout: 300` sets a 5-minute timeout (required for large file processing)
+- This configuration uses `go run .` for automatic rebuilds
+- Restart VSCode after adding this configuration
+
+### Alternative: Project-Level Configuration
+
+Alternatively, you can add to your project's Cline MCP settings, but user-level is recommended for global availability.
 
 ## CSV Output Format
 
@@ -112,8 +125,19 @@ The server generates CSV files with 15 columns:
 
 ## File Locations
 
-- **CSV Output**: `logs/task_{task_id}_{timestamp}_costs.csv`
+- **CSV Output**: `{repository_root}/ui-log-parser/logs/task_{task_id}_{timestamp}_costs.csv`
 - **Monitored Path**: `/Users/emma/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/tasks/*/ui_messages.json`
+
+### Automatic Repository Detection
+
+The server automatically detects the repository where Cline is currently working and creates CSV logs in the `ui-log-parser/logs` directory within that repository. The detection process:
+
+1. **Current Directory Check**: First checks if the MCP server is running within a repository
+2. **Repository Search**: Searches common project locations (`~/Projects`, `~/Documents`, `~/Desktop`)
+3. **Recent Activity**: Selects the most recently modified repository if multiple are found
+4. **Fallback**: Falls back to the MCP server directory if detection fails
+
+**Repository Markers**: The server identifies repositories by looking for `.git`, `go.mod`, `package.json`, or `.gitignore` files.
 
 ## Example Output
 

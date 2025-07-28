@@ -12,6 +12,128 @@ import (
 	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
 )
 
+// detectRepositoryRoot attempts to find the repository root where Cline is working
+func detectRepositoryRoot() (string, error) {
+	// Strategy 1: Check if we're already in a repository
+	cwd, err := os.Getwd()
+	if err == nil {
+		if repoRoot := findRepoRootFromPath(cwd); repoRoot != "" {
+			return repoRoot, nil
+		}
+	}
+
+	// Strategy 2: Look for recently modified repositories in common locations
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %v", err)
+	}
+
+	// Common project locations to search
+	projectPaths := []string{
+		filepath.Join(homeDir, "Projects"),
+		filepath.Join(homeDir, "Documents"),
+		filepath.Join(homeDir, "Desktop"),
+	}
+
+	// Find the most recently modified repository
+	var mostRecentRepo string
+	var mostRecentTime time.Time
+
+	for _, basePath := range projectPaths {
+		if repos := findRecentReposInPath(basePath); len(repos) > 0 {
+			for _, repo := range repos {
+				if info, err := os.Stat(repo); err == nil {
+					if info.ModTime().After(mostRecentTime) {
+						mostRecentTime = info.ModTime()
+						mostRecentRepo = repo
+					}
+				}
+			}
+		}
+	}
+
+	if mostRecentRepo != "" {
+		return mostRecentRepo, nil
+	}
+
+	return "", fmt.Errorf("could not detect repository root")
+}
+
+// findRepoInPath searches for repositories in the given path
+func findRepoInPath(basePath string) string {
+	entries, err := os.ReadDir(basePath)
+	if err != nil {
+		return ""
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dirPath := filepath.Join(basePath, entry.Name())
+			if repoRoot := findRepoRoot(dirPath); repoRoot != "" {
+				return repoRoot
+			}
+		}
+	}
+
+	return ""
+}
+
+// findRepoRoot checks if a directory is a repository root
+func findRepoRoot(path string) string {
+	// Check for common repository markers
+	markers := []string{".git", "go.mod", "package.json", ".gitignore"}
+
+	for _, marker := range markers {
+		if _, err := os.Stat(filepath.Join(path, marker)); err == nil {
+			// Found a repository marker, this is likely a repo root
+			return path
+		}
+	}
+
+	return ""
+}
+
+// findRepoRootFromPath walks up the directory tree to find a repository root
+func findRepoRootFromPath(startPath string) string {
+	currentPath := startPath
+
+	for {
+		if repoRoot := findRepoRoot(currentPath); repoRoot != "" {
+			return repoRoot
+		}
+
+		parentPath := filepath.Dir(currentPath)
+		if parentPath == currentPath {
+			// Reached the root directory
+			break
+		}
+		currentPath = parentPath
+	}
+
+	return ""
+}
+
+// findRecentReposInPath finds repositories in the given path
+func findRecentReposInPath(basePath string) []string {
+	var repos []string
+
+	entries, err := os.ReadDir(basePath)
+	if err != nil {
+		return repos
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			dirPath := filepath.Join(basePath, entry.Name())
+			if repoRoot := findRepoRoot(dirPath); repoRoot != "" {
+				repos = append(repos, repoRoot)
+			}
+		}
+	}
+
+	return repos
+}
+
 // FileWatcher handles monitoring of Cline task files
 type FileWatcher struct {
 	watcher       *fsnotify.Watcher
@@ -143,22 +265,31 @@ func (fw *FileWatcher) debounceProcessing(filePath string) {
 func (fw *FileWatcher) processFile(filePath string) {
 	log.Printf("Processing file change: %s", filePath)
 
-	// Get the current working directory (project directory)
-	projectDir, err := os.Getwd()
+	// Try to detect the repository root where Cline is working
+	repoRoot, err := detectRepositoryRoot()
 	if err != nil {
-		log.Printf("Error getting current working directory: %v", err)
-		return
+		log.Printf("Warning: Could not detect repository root (%v), falling back to MCP server directory", err)
+		// Fallback to current working directory (MCP server directory)
+		repoRoot, err = os.Getwd()
+		if err != nil {
+			log.Printf("Error getting current working directory: %v", err)
+			return
+		}
 	}
 
-	log.Printf("DEBUG: Current working directory: %s", projectDir)
-	log.Printf("DEBUG: Using ProcessUILogToCSVAutoAt with basePath: %s", projectDir)
+	// Create the target log directory: {repoRoot}/ui-log-parser/logs
+	logBasePath := filepath.Join(repoRoot, "ui-log-parser")
 
-	// Use the new function that creates logs directory in the project directory
-	err = uilogparser.ProcessUILogToCSVAutoAt(filePath, projectDir)
+	log.Printf("DEBUG: Detected repository root: %s", repoRoot)
+	log.Printf("DEBUG: Using ProcessUILogToCSVAutoAt with basePath: %s", logBasePath)
+
+	// Use the new function that creates logs directory in the detected repository
+	err = uilogparser.ProcessUILogToCSVAutoAt(filePath, logBasePath)
 	if err != nil {
 		log.Printf("Error processing file %s: %v", filePath, err)
 		return
 	}
 
 	log.Printf("Successfully processed and generated CSV for: %s", filePath)
+	log.Printf("CSV saved to: %s/logs/", logBasePath)
 }
