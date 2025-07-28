@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
+	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/internal/ui-log-parser"
 )
 
 // MCPResponse represents an MCP tool response

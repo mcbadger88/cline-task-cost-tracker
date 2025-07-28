@@ -279,7 +279,7 @@ go build -o cost-tracker-mcp-server
 ## Dependencies
 
 - **github.com/fsnotify/fsnotify** - File system watching
-- **github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser** - CSV generation logic
+- **github.com/mcbadger88/cline-task-cost-tracker/internal/ui-log-parser** - CSV generation logic
 
 ## Version History
 

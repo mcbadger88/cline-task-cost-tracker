@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
+	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/internal/ui-log-parser"
 )
 
 // detectRepositoryRoot attempts to find the repository root where Cline is working
@@ -59,40 +59,6 @@ func detectRepositoryRoot() (string, error) {
 	return "", fmt.Errorf("could not detect repository root")
 }
 
-// findRepoInPath searches for repositories in the given path
-func findRepoInPath(basePath string) string {
-	entries, err := os.ReadDir(basePath)
-	if err != nil {
-		return ""
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			dirPath := filepath.Join(basePath, entry.Name())
-			if repoRoot := findRepoRoot(dirPath); repoRoot != "" {
-				return repoRoot
-			}
-		}
-	}
-
-	return ""
-}
-
-// findRepoRoot checks if a directory is a repository root
-func findRepoRoot(path string) string {
-	// Check for common repository markers
-	markers := []string{".git", "go.mod", "package.json", ".gitignore"}
-
-	for _, marker := range markers {
-		if _, err := os.Stat(filepath.Join(path, marker)); err == nil {
-			// Found a repository marker, this is likely a repo root
-			return path
-		}
-	}
-
-	return ""
-}
-
 // findRepoRootFromPath walks up the directory tree to find a repository root
 func findRepoRootFromPath(startPath string) string {
 	currentPath := startPath
@@ -108,6 +74,21 @@ func findRepoRootFromPath(startPath string) string {
 			break
 		}
 		currentPath = parentPath
+	}
+
+	return ""
+}
+
+// findRepoRoot checks if a directory is a repository root
+func findRepoRoot(path string) string {
+	// Check for common repository markers
+	markers := []string{".git", "go.mod", "package.json", ".gitignore"}
+
+	for _, marker := range markers {
+		if _, err := os.Stat(filepath.Join(path, marker)); err == nil {
+			// Found a repository marker, this is likely a repo root
+			return path
+		}
 	}
 
 	return ""
