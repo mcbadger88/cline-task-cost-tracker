@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
+	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/internal/ui-log-parser"
 )
 
 func main() {
