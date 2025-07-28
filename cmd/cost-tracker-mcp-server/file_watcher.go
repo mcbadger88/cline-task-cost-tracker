@@ -14,19 +14,28 @@ import (
 
 // detectRepositoryRoot attempts to find the repository root where Cline is working
 func detectRepositoryRoot() (string, error) {
+	log.Printf("DEBUG: Starting repository detection...")
+
 	// Strategy 1: Check if we're already in a repository
 	cwd, err := os.Getwd()
+	log.Printf("DEBUG: Current working directory: %s", cwd)
 	if err == nil {
 		if repoRoot := findRepoRootFromPath(cwd); repoRoot != "" {
+			log.Printf("DEBUG: Found repository root from CWD: %s", repoRoot)
 			return repoRoot, nil
 		}
+		log.Printf("DEBUG: No repository root found from CWD")
+	} else {
+		log.Printf("DEBUG: Error getting CWD: %v", err)
 	}
 
 	// Strategy 2: Look for recently modified repositories in common locations (including nested)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
+		log.Printf("DEBUG: Error getting home directory: %v", err)
 		return "", fmt.Errorf("failed to get home directory: %v", err)
 	}
+	log.Printf("DEBUG: Home directory: %s", homeDir)
 
 	// Common project locations to search (including nested directories)
 	projectPaths := []string{
@@ -40,22 +49,33 @@ func detectRepositoryRoot() (string, error) {
 	var mostRecentTime time.Time
 
 	for _, basePath := range projectPaths {
-		if repos := findRecentReposInPathRecursive(basePath, 3); len(repos) > 0 {
+		log.Printf("DEBUG: Searching in: %s", basePath)
+		repos := findRecentReposInPathRecursive(basePath, 3)
+		log.Printf("DEBUG: Found %d repositories in %s", len(repos), basePath)
+
+		if len(repos) > 0 {
 			for _, repo := range repos {
+				log.Printf("DEBUG: Checking repository: %s", repo)
 				if info, err := os.Stat(repo); err == nil {
+					log.Printf("DEBUG: Repository %s modified at: %s", repo, info.ModTime())
 					if info.ModTime().After(mostRecentTime) {
 						mostRecentTime = info.ModTime()
 						mostRecentRepo = repo
+						log.Printf("DEBUG: New most recent repository: %s (modified: %s)", repo, info.ModTime())
 					}
+				} else {
+					log.Printf("DEBUG: Error getting info for repository %s: %v", repo, err)
 				}
 			}
 		}
 	}
 
 	if mostRecentRepo != "" {
+		log.Printf("DEBUG: Final selected repository: %s", mostRecentRepo)
 		return mostRecentRepo, nil
 	}
 
+	log.Printf("DEBUG: No repository found, returning error")
 	return "", fmt.Errorf("could not detect repository root")
 }
 
@@ -120,20 +140,25 @@ func findRecentReposInPathRecursive(basePath string, maxDepth int) []string {
 	var repos []string
 
 	if maxDepth <= 0 {
+		log.Printf("DEBUG: Reached max depth, stopping recursion at: %s", basePath)
 		return repos
 	}
 
+	log.Printf("DEBUG: Searching recursively in: %s (depth: %d)", basePath, maxDepth)
 	entries, err := os.ReadDir(basePath)
 	if err != nil {
+		log.Printf("DEBUG: Error reading directory %s: %v", basePath, err)
 		return repos
 	}
 
 	for _, entry := range entries {
 		if entry.IsDir() {
 			dirPath := filepath.Join(basePath, entry.Name())
+			log.Printf("DEBUG: Checking directory: %s", dirPath)
 
 			// Check if this directory is a repository
 			if repoRoot := findRepoRoot(dirPath); repoRoot != "" {
+				log.Printf("DEBUG: Found repository: %s", repoRoot)
 				repos = append(repos, repoRoot)
 			}
 
@@ -143,6 +168,7 @@ func findRecentReposInPathRecursive(basePath string, maxDepth int) []string {
 		}
 	}
 
+	log.Printf("DEBUG: Found %d repositories in %s", len(repos), basePath)
 	return repos
 }
 
