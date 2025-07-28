@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "cost-tracker": {
+      "command": "go",
+      "args": ["run", "."],
+      "env": {},
+      "cwd": "/Users/emma/Projects/Mantel/cost-and-transcripts-trackers/cmd/cost-tracker-mcp-server"
+    }
+  }
+}

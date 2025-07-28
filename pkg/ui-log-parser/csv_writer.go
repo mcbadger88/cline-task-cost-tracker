@@ -3,6 +3,7 @@ package uilogparser
 import (
 	"encoding/csv"
 	"os"
+	"path/filepath"
 )
 
 // WriteCSV writes cost records to a CSV file
@@ -57,4 +58,10 @@ func WriteCSV(filename string, records []CostRecord) error {
 // EnsureLogsDirectory creates the logs directory if it doesn't exist
 func EnsureLogsDirectory() error {
 	return os.MkdirAll("logs", 0755)
+}
+
+// EnsureLogsDirectoryAt creates the logs directory at a specific path if it doesn't exist
+func EnsureLogsDirectoryAt(basePath string) error {
+	logsPath := filepath.Join(basePath, "logs")
+	return os.MkdirAll(logsPath, 0755)
 }

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -305,6 +306,49 @@ func ProcessUILogToCSVAuto(inputPath string) error {
 	if err := EnsureLogsDirectory(); err != nil {
 		return err
 	}
+
+	// Write CSV file
+	if err := WriteCSV(outputPath, records); err != nil {
+		return err
+	}
+
+	fmt.Printf("Cost tracker CSV generated: %s\n", outputPath)
+	fmt.Printf("Total records: %d\n", len(records))
+	return nil
+}
+
+// ProcessUILogToCSVAutoAt automatically generates the output path based on input
+// and creates the logs directory at the specified base path
+func ProcessUILogToCSVAutoAt(inputPath, basePath string) error {
+	log.Printf("DEBUG: ProcessUILogToCSVAutoAt called with inputPath=%s, basePath=%s", inputPath, basePath)
+
+	// Parse just enough to get the first message for timestamp
+	messages, err := ParseUIMessages(inputPath)
+	if err != nil {
+		return err
+	}
+
+	if len(messages) == 0 {
+		return fmt.Errorf("no messages found in the file")
+	}
+
+	// Generate output path relative to base path
+	taskID := ExtractTaskID(inputPath)
+	outputFilename := fmt.Sprintf("task_%s_%s_costs.csv", taskID, formatTimestampForFilename(messages[0].Timestamp))
+	outputPath := filepath.Join(basePath, "logs", outputFilename)
+
+	log.Printf("DEBUG: Generated outputPath: %s", outputPath)
+
+	// Process the rest
+	records := ProcessMessages(messages)
+
+	// Ensure logs directory exists at the specified base path
+	log.Printf("DEBUG: About to call EnsureLogsDirectoryAt with basePath: %s", basePath)
+	if err := EnsureLogsDirectoryAt(basePath); err != nil {
+		log.Printf("DEBUG: EnsureLogsDirectoryAt failed: %v", err)
+		return err
+	}
+	log.Printf("DEBUG: EnsureLogsDirectoryAt succeeded")
 
 	// Write CSV file
 	if err := WriteCSV(outputPath, records); err != nil {
