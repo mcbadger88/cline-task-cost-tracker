@@ -10,7 +10,7 @@ import (
 const VERSION = "v2.2.0-simplified"
 
 func main() {
-	// Set up logging
+	// Initialise logging
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	log.Printf("Cost Tracker MCP Server %s starting...", VERSION)
