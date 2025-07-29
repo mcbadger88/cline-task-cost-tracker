@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/internal/ui-log-parser"
+	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
 )
 
 // detectRepositoryRoot attempts to find the repository root where Cline is working

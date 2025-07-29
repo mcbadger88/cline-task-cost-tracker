@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/internal/ui-log-parser"
+	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser"
 )
 
 // extractWorkingDirectoryFromTask extracts the working directory from ui_messages.json
