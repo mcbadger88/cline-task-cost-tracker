@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,16 @@ const (
 	UIMessagesFile = "ui_messages.json"
 	DebounceDelay  = 1 // seconds
 )
+
+// getGitHash returns the current git commit hash
+func getGitHash() string {
+	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
+	output, err := cmd.Output()
+	if err != nil {
+		return "unknown"
+	}
+	return strings.TrimSpace(string(output))
+}
 
 // GetClineTasksPath returns the path to Cline tasks directory
 func GetClineTasksPath() string {
@@ -319,7 +330,8 @@ func main() {
 
 	// Create stdio transport and run server
 	transport := mcp.NewStdioTransport()
-	log.Println("Starting Cost Tracker MCP Server with SDK...")
+	gitHash := getGitHash()
+	log.Printf("Starting Cost Tracker MCP Server with SDK (version: %s)...", gitHash)
 
 	if err := server.Run(ctx, transport); err != nil {
 		log.Fatalf("Server error: %v", err)
