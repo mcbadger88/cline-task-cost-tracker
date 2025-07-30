@@ -277,7 +277,7 @@ func extractWorkingDirectoryFromTask(taskFilePath string) string {
 }
 
 func main() {
-	// Initialise logging
+	// Set up logging.
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	// Create implementation
