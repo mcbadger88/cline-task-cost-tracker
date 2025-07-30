@@ -12,10 +12,10 @@ The Cost Tracker runs in the background and automatically:
 
 ## Quick Setup (Recommended)
 
-### 1. Install the MCP Server
+### 1. Install the MCP Server (SDK Version)
 
 ```bash
-go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server@latest
+go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server-sdk@latest
 ```
 
 Check: Ensure you have Go's bin directory in your PATH. 
@@ -37,7 +37,7 @@ Add this to `~/Library/Application Support/Code/User/mcp.json`:
 {
   "servers": {
     "cost-tracker": {
-      "command": "cost-tracker-mcp-server",
+      "command": "cost-tracker-mcp-server-sdk",
       "args": [],
       "env": {},
       "timeout": 300
@@ -97,11 +97,40 @@ Edit `.cline_rules` to point to your built binary location.
 
 **Note**: The Cline rule approach requires manual setup per project, while the MCP server works globally across all repositories.
 
+## Alternative: Original MCP Server
+
+We have an example of the MCP server that does not use the Go SDK. This is not recommended for use, but is kept here for comparison.
+
+### 1. Install the Original MCP Server
+
+```bash
+go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server@latest
+```
+
+### 2. Add to User MCP Configuration
+
+Add this to `~/Library/Application Support/Code/User/mcp.json`:
+
+```json
+{
+  "servers": {
+    "cost-tracker": {
+      "command": "cost-tracker-mcp-server",
+      "args": [],
+      "env": {},
+      "timeout": 300
+    }
+  }
+}
+```
+
+**Note**: The SDK version (recommended above) uses the official Go MCP SDK and is more robust and maintainable.
+
 ## Troubleshooting
 
 **Server not starting?**
 - Ensure Go is installed and available in your PATH
-- Check that `cost-tracker-mcp-server` is installed: `which cost-tracker-mcp-server`
+- Check that `cost-tracker-mcp-server-sdk` is installed: `which cost-tracker-mcp-server-sdk`
 - Restart VSCode after configuration changes
 
 **No CSV files appearing?**
