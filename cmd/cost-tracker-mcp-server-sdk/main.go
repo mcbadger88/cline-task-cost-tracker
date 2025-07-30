@@ -13,6 +13,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	uilogparser "github.com/mcbadger88/cline-task-cost-tracker/internal/ui-log-parser"
+	"github.com/modelcontextprotocol/go-sdk/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -29,7 +30,7 @@ func GetClineTasksPath() string {
 		log.Printf("Error getting home directory: %v", err)
 		return ""
 	}
-	return filepath.Join(homeDir, ".cline", "tasks")
+	return filepath.Join(homeDir, "Library", "Application Support", "Code", "User", "globalStorage", "saoudrizwan.claude-dev", "tasks")
 }
 
 // GetCurrentTaskID returns the most recent task ID
@@ -278,7 +279,15 @@ func main() {
 	tool := &mcp.Tool{
 		Name:        "generate_csv",
 		Description: "Generate CSV file with cost tracking data from ui_messages.json file",
-		InputSchema: nil, // Optional - could add schema validation
+		InputSchema: &jsonschema.Schema{
+			Type: "object",
+			Properties: map[string]*jsonschema.Schema{
+				"file_path": {
+					Type:        "string",
+					Description: "Optional path to ui_messages.json file. If not provided, uses current task.",
+				},
+			},
+		},
 	}
 
 	server.AddTool(tool, handleGenerateCSV)

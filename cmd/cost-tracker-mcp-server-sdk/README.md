@@ -1,75 +1,91 @@
 # Cost Tracker MCP Server (SDK Version)
 
-A Model Context Protocol (MCP) server for automatic cost tracking of Cline tasks, built using the official Go MCP SDK.
+Automatically track Cline task costs across all your repositories with zero configuration.
 
-## Features
+## What It Does
 
-- **Official MCP SDK**: Uses `github.com/modelcontextprotocol/go-sdk` for proper MCP protocol compliance
-- **Automatic File Watching**: Monitors Cline task files with 1-second debouncing
-- **CSV Generation**: Automatically generates cost tracking CSV files
-- **Repository Detection**: Intelligently detects working directories and places CSV files appropriately
-- **Single Tool**: Provides `generate_csv` tool for manual CSV generation
+The Cost Tracker MCP Server runs in the background and automatically:
+- 📊 **Monitors all Cline tasks** across every repository
+- 💰 **Generates detailed cost reports** in CSV format
+- 📁 **Organizes logs per repository** in `ui-log-parser/logs/`
+- 🔄 **Works continuously** without manual intervention
 
-## Installation
+## Quick Setup
+
+### 1. Install the Server
 
 ```bash
 go install github.com/mcbadger88/cline-task-cost-tracker/cmd/cost-tracker-mcp-server-sdk@latest
 ```
 
-## Usage
+### 2. Add to User MCP Configuration
 
-```bash
-cost-tracker-mcp-server-sdk
-```
+Add this to `~/Library/Application Support/Code/User/mcp.json`:
 
-## Tools
-
-### generate_csv
-
-Generates a CSV file with cost tracking data from a Cline task's ui_messages.json file.
-
-**Parameters:**
-- `file_path` (optional): Path to ui_messages.json file. If not provided, uses the most recent task.
-
-**Example:**
 ```json
 {
-  "file_path": "/path/to/task/ui_messages.json"
+  "servers": {
+    "cost-tracker-sdk": {
+      "command": "cost-tracker-mcp-server-sdk",
+      "args": [],
+      "env": {},
+      "timeout": 300
+    }
+  }
 }
 ```
 
-## File Watching
+### 3. Restart VSCode
 
-The server automatically monitors the Cline tasks directory (`~/.cline/tasks/`) and:
+After adding the configuration, restart VSCode completely.
 
-1. Watches for changes to `ui_messages.json` files
-2. Uses 1-second debouncing to avoid processing rapid changes
-3. Automatically generates CSV files when tasks are updated
-4. Places CSV files in `{detected_repo}/ui-log-parser/logs/`
+### 4. That's It!
 
-## Architecture
+The server now runs automatically in the background for all your repositories. Cost tracking CSV files will appear in `ui-log-parser/logs/` within each repository you work on.
 
-- **main.go**: Entry point with graceful shutdown handling
-- **server.go**: MCP server implementation using official SDK
-- **tools.go**: Tool implementations (generate_csv)
-- **watcher.go**: File watching logic with debouncing
-- **config.go**: Configuration constants and utilities
+## What You Get
 
-## Dependencies
+### Automatic CSV Reports
+Every Cline task generates a detailed CSV file with:
+- Individual API request costs
+- Cumulative spending
+- Token usage statistics
+- Tool usage tracking
+- Task timing information
 
-- `github.com/modelcontextprotocol/go-sdk`: Official MCP SDK
-- `github.com/fsnotify/fsnotify`: File system notifications
-- `github.com/mcbadger88/cline-task-cost-tracker/pkg/ui-log-parser`: CSV generation logic
+### Example Output Location
+```
+your-project/
+├── ui-log-parser/
+│   └── logs/
+│       └── task_1753250474282_2025-07-23_16-01-14_costs.csv
+└── ... (your project files)
+```
 
-## Differences from Manual Implementation
+### MCP Tool Available
+Once configured, you'll have access to this tool in Cline:
+- `generate_csv` - Generate CSV file with cost tracking data from ui_messages.json file
 
-This SDK version provides:
-- ✅ Proper MCP protocol compliance
-- ✅ Better error handling with SDK patterns
-- ✅ Cleaner, more maintainable code
-- ✅ Official SDK support and updates
-- ✅ Standardized MCP server patterns
+## Troubleshooting
 
-## Usage with Cline
+**Server not starting?**
+- Ensure Go is installed and available in your PATH
+- Check that `cost-tracker-mcp-server-sdk` is installed: `which cost-tracker-mcp-server-sdk`
+- Restart VSCode after configuration changes
 
-Add this server to your MCP configuration to enable automatic cost tracking for all Cline tasks.
+**No CSV files appearing?**
+- The server automatically detects your repository and creates logs there
+- Check for `ui-log-parser/logs/` directory in your project root
+- Look for debug messages in VSCode's output panel
+
+**Installation issues?**
+- Make sure your `GOPATH/bin` is in your system PATH
+- If `go install` fails, ensure you have Go 1.21+ installed
+- Try running `go clean -modcache` and retry the installation
+
+**Need more details?**
+See [ADVANCED_USAGE.md](ADVANCED_USAGE.md) for detailed configuration options, manual installation, troubleshooting, and development information.
+
+---
+
+**That's it!** Set it once, forget it, and get automatic cost tracking across all your Cline projects.
